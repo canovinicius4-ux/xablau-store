@@ -1,0 +1,15 @@
+{
+  "name": "xablau-store-webhook",
+  "version": "1.0.0",
+  "description": "Webhook Mercado Pago - Xablau Store",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
