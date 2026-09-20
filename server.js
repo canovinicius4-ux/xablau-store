@@ -6,7 +6,12 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const WEBHOOK_SECRET = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+
+const WEBHOOK_SECRET =
+    process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+
+const ACCESS_TOKEN =
+    process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
 // ============================================================
 // VERIFICAR CONFIGURAÇÃO
@@ -17,8 +22,21 @@ if (!WEBHOOK_SECRET) {
     console.error('======================================');
     console.error('❌ ERRO DE CONFIGURAÇÃO');
     console.error('======================================');
-    console.error('MERCADO_PAGO_WEBHOOK_SECRET não foi configurada.');
-    console.error('Configure a variável no Render.');
+    console.error(
+        'MERCADO_PAGO_WEBHOOK_SECRET não foi configurada.'
+    );
+    console.error('======================================');
+    console.error('');
+}
+
+if (!ACCESS_TOKEN) {
+    console.error('');
+    console.error('======================================');
+    console.error('❌ ERRO DE CONFIGURAÇÃO');
+    console.error('======================================');
+    console.error(
+        'MERCADO_PAGO_ACCESS_TOKEN não foi configurado.'
+    );
     console.error('======================================');
     console.error('');
 }
@@ -32,47 +50,82 @@ app.get('/', (req, res) => {
 });
 
 // ============================================================
-// FUNÇÃO PARA VALIDAR ASSINATURA DO MERCADO PAGO
+// PEGAR DATA.ID
+// ============================================================
+
+function obterDataId(req) {
+
+    return (
+        req.query['data.id'] ||
+        req.body?.data?.id ||
+        null
+    );
+}
+
+// ============================================================
+// VALIDAR ASSINATURA MERCADO PAGO
 // ============================================================
 
 function validarAssinaturaMercadoPago(req) {
+
     try {
+
         if (!WEBHOOK_SECRET) {
-            console.error('❌ Assinatura secreta não configurada.');
+            console.error(
+                '❌ Assinatura secreta não configurada.'
+            );
+
             return false;
         }
 
-        const xSignature = req.get('x-signature');
-        const xRequestId = req.get('x-request-id');
+        const xSignature =
+            req.get('x-signature');
 
-        // O Mercado Pago envia o ID do recurso como query parameter.
-        // Exemplo:
-        // ?data.id=ORD123&type=order
-        let dataId = req.query['data.id'];
+        const xRequestId =
+            req.get('x-request-id');
 
-        if (!xSignature || !xRequestId || !dataId) {
-            console.warn('⚠️ Webhook sem dados necessários para validação.');
+        let dataId =
+            obterDataId(req);
+
+        if (
+            !xSignature ||
+            !xRequestId ||
+            !dataId
+        ) {
+            console.warn(
+                '⚠️ Webhook sem dados necessários para validação.'
+            );
+
             return false;
         }
 
-        // Para notificações Order, o Mercado Pago orienta
-        // utilizar data.id em letras minúsculas na validação.
-        dataId = String(dataId).toLowerCase();
+        dataId =
+            String(dataId).toLowerCase();
 
         let timestamp = null;
         let assinaturaRecebida = null;
 
-        const partes = xSignature.split(',');
+        const partes =
+            xSignature.split(',');
 
         for (const parte of partes) {
-            const separador = parte.indexOf('=');
+
+            const separador =
+                parte.indexOf('=');
 
             if (separador === -1) {
                 continue;
             }
 
-            const chave = parte.substring(0, separador).trim();
-            const valor = parte.substring(separador + 1).trim();
+            const chave =
+                parte
+                    .substring(0, separador)
+                    .trim();
+
+            const valor =
+                parte
+                    .substring(separador + 1)
+                    .trim();
 
             if (chave === 'ts') {
                 timestamp = valor;
@@ -83,39 +136,62 @@ function validarAssinaturaMercadoPago(req) {
             }
         }
 
-        if (!timestamp || !assinaturaRecebida) {
-            console.warn('⚠️ x-signature inválido.');
+        if (
+            !timestamp ||
+            !assinaturaRecebida
+        ) {
+            console.warn(
+                '⚠️ x-signature inválido.'
+            );
+
             return false;
         }
 
         const manifest =
-            `id:${dataId};request-id:${xRequestId};ts:${timestamp};`;
+            `id:${dataId};` +
+            `request-id:${xRequestId};` +
+            `ts:${timestamp};`;
 
-        const assinaturaCalculada = crypto
-            .createHmac('sha256', WEBHOOK_SECRET)
-            .update(manifest)
-            .digest('hex');
+        const assinaturaCalculada =
+            crypto
+                .createHmac(
+                    'sha256',
+                    WEBHOOK_SECRET
+                )
+                .update(manifest)
+                .digest('hex');
 
-        // Verifica se os hashes têm formato compatível.
         if (
-            !/^[a-f0-9]{64}$/i.test(assinaturaRecebida) ||
-            !/^[a-f0-9]{64}$/i.test(assinaturaCalculada)
+            !/^[a-f0-9]{64}$/i.test(
+                assinaturaRecebida
+            ) ||
+            !/^[a-f0-9]{64}$/i.test(
+                assinaturaCalculada
+            )
         ) {
-            console.warn('⚠️ Formato de assinatura inválido.');
+            console.warn(
+                '⚠️ Formato da assinatura inválido.'
+            );
+
             return false;
         }
 
-        const recebidaBuffer = Buffer.from(
-            assinaturaRecebida,
-            'hex'
-        );
+        const recebidaBuffer =
+            Buffer.from(
+                assinaturaRecebida,
+                'hex'
+            );
 
-        const calculadaBuffer = Buffer.from(
-            assinaturaCalculada,
-            'hex'
-        );
+        const calculadaBuffer =
+            Buffer.from(
+                assinaturaCalculada,
+                'hex'
+            );
 
-        if (recebidaBuffer.length !== calculadaBuffer.length) {
+        if (
+            recebidaBuffer.length !==
+            calculadaBuffer.length
+        ) {
             return false;
         }
 
@@ -125,6 +201,7 @@ function validarAssinaturaMercadoPago(req) {
         );
 
     } catch (erro) {
+
         console.error(
             '❌ Erro ao validar assinatura:',
             erro.message
@@ -135,76 +212,388 @@ function validarAssinaturaMercadoPago(req) {
 }
 
 // ============================================================
+// CONSULTAR ORDER DIRETAMENTE NO MERCADO PAGO
+// ============================================================
+
+async function consultarOrderMercadoPago(orderId) {
+
+    if (!ACCESS_TOKEN) {
+        throw new Error(
+            'Access Token não configurado.'
+        );
+    }
+
+    const url =
+        `https://api.mercadopago.com/v1/orders/` +
+        encodeURIComponent(orderId);
+
+    const resposta =
+        await fetch(
+            url,
+            {
+                method: 'GET',
+
+                headers: {
+                    Authorization:
+                        `Bearer ${ACCESS_TOKEN}`,
+
+                    Accept:
+                        'application/json'
+                }
+            }
+        );
+
+    let dados;
+
+    try {
+        dados = await resposta.json();
+    } catch {
+        dados = null;
+    }
+
+    if (!resposta.ok) {
+
+        console.error(
+            `❌ Mercado Pago respondeu HTTP ${resposta.status}`
+        );
+
+        throw new Error(
+            `Falha ao consultar Order. HTTP ${resposta.status}`
+        );
+    }
+
+    return dados;
+}
+
+// ============================================================
+// ANALISAR PAGAMENTO
+// ============================================================
+
+function analisarPagamento(order) {
+
+    const pagamentos =
+        Array.isArray(
+            order?.transactions?.payments
+        )
+            ? order.transactions.payments
+            : [];
+
+    const pagamentosAcreditados =
+        pagamentos.filter(
+            pagamento =>
+                pagamento?.status ===
+                    'processed' &&
+                pagamento?.status_detail ===
+                    'accredited'
+        );
+
+    const totalPago =
+        Number(order?.total_paid_amount);
+
+    const totalOrder =
+        Number(order?.total_amount);
+
+    const valorValido =
+        Number.isFinite(totalPago) &&
+        Number.isFinite(totalOrder) &&
+        totalPago > 0 &&
+        totalOrder > 0 &&
+        Math.abs(
+            totalPago - totalOrder
+        ) < 0.001;
+
+    const orderProcessada =
+        order?.status === 'processed';
+
+    const orderAcreditada =
+        order?.status_detail ===
+        'accredited';
+
+    const possuiPagamentoAcreditado =
+        pagamentosAcreditados.length > 0;
+
+    const externalReference =
+        typeof order?.external_reference ===
+        'string'
+            ? order.external_reference
+            : '';
+
+    const referenciaXablau =
+        /^(windows|otimizacao)_\d+_\d+$/.test(
+            externalReference
+        );
+
+    const pagamentoConfirmado =
+        orderProcessada &&
+        orderAcreditada &&
+        possuiPagamentoAcreditado &&
+        valorValido &&
+        referenciaXablau;
+
+    return {
+        pagamentoConfirmado,
+        orderProcessada,
+        orderAcreditada,
+        possuiPagamentoAcreditado,
+        valorValido,
+        referenciaXablau,
+        totalOrder,
+        totalPago,
+        externalReference
+    };
+}
+
+// ============================================================
 // WEBHOOK MERCADO PAGO
 // ============================================================
 
-app.post('/webhook/mercadopago', (req, res) => {
+app.post(
+    '/webhook/mercadopago',
+    async (req, res) => {
 
-    try {
-        // ----------------------------------------------------
-        // VALIDAR ASSINATURA
-        // ----------------------------------------------------
+        try {
 
-        const assinaturaValida =
-            validarAssinaturaMercadoPago(req);
+            // ================================================
+            // 1. VALIDAR ASSINATURA
+            // ================================================
 
-        if (!assinaturaValida) {
-            console.warn('');
-            console.warn('======================================');
-            console.warn('🚫 WEBHOOK REJEITADO');
-            console.warn('Assinatura Mercado Pago inválida.');
-            console.warn('======================================');
-            console.warn('');
+            const assinaturaValida =
+                validarAssinaturaMercadoPago(req);
 
-            return res.sendStatus(401);
+            if (!assinaturaValida) {
+
+                console.warn('');
+                console.warn(
+                    '======================================'
+                );
+                console.warn(
+                    '🚫 WEBHOOK REJEITADO'
+                );
+                console.warn(
+                    'Assinatura Mercado Pago inválida.'
+                );
+                console.warn(
+                    '======================================'
+                );
+                console.warn('');
+
+                return res.sendStatus(401);
+            }
+
+            // ================================================
+            // 2. OBTER ORDER ID
+            // ================================================
+
+            const orderId =
+                obterDataId(req);
+
+            if (!orderId) {
+
+                console.warn(
+                    '⚠️ Webhook sem Order ID.'
+                );
+
+                return res.sendStatus(400);
+            }
+
+            console.log('');
+            console.log(
+                '======================================'
+            );
+            console.log(
+                '🔔 WEBHOOK MERCADO PAGO AUTÊNTICO'
+            );
+            console.log(
+                '======================================'
+            );
+            console.log(
+                `Ação: ${
+                    req.body?.action ||
+                    'não informada'
+                }`
+            );
+            console.log(
+                `Order ID: ${orderId}`
+            );
+            console.log(
+                '======================================'
+            );
+
+            // ================================================
+            // 3. CONSULTAR MERCADO PAGO
+            // ================================================
+
+            let order;
+
+            try {
+
+                order =
+                    await consultarOrderMercadoPago(
+                        orderId
+                    );
+
+            } catch (erro) {
+
+                console.warn('');
+                console.warn(
+                    '⚠️ Não foi possível confirmar esta Order.'
+                );
+                console.warn(
+                    erro.message
+                );
+                console.warn('');
+
+                // A notificação foi recebida corretamente.
+                // Não entregamos nada sem confirmação.
+                return res.sendStatus(200);
+            }
+
+            // ================================================
+            // 4. ANALISAR PAGAMENTO REAL
+            // ================================================
+
+            const resultado =
+                analisarPagamento(order);
+
+            console.log('');
+            console.log(
+                '======================================'
+            );
+            console.log(
+                '🔎 VERIFICAÇÃO DA ORDER'
+            );
+            console.log(
+                '======================================'
+            );
+
+            console.log(
+                `Status: ${
+                    order?.status ||
+                    'não informado'
+                }`
+            );
+
+            console.log(
+                `Status detail: ${
+                    order?.status_detail ||
+                    'não informado'
+                }`
+            );
+
+            console.log(
+                `Valor da Order: ${
+                    Number.isFinite(
+                        resultado.totalOrder
+                    )
+                        ? `R$ ${resultado.totalOrder.toFixed(2)}`
+                        : 'inválido'
+                }`
+            );
+
+            console.log(
+                `Valor pago: ${
+                    Number.isFinite(
+                        resultado.totalPago
+                    )
+                        ? `R$ ${resultado.totalPago.toFixed(2)}`
+                        : 'inválido'
+                }`
+            );
+
+            console.log(
+                `External reference válida: ${
+                    resultado.referenciaXablau
+                        ? 'SIM'
+                        : 'NÃO'
+                }`
+            );
+
+            console.log(
+                `Pagamento acreditado: ${
+                    resultado.possuiPagamentoAcreditado
+                        ? 'SIM'
+                        : 'NÃO'
+                }`
+            );
+
+            console.log(
+                '======================================'
+            );
+
+            // ================================================
+            // 5. PAGAMENTO CONFIRMADO
+            // ================================================
+
+            if (
+                !resultado.pagamentoConfirmado
+            ) {
+
+                console.log('');
+                console.log(
+                    '⏳ PAGAMENTO NÃO CONFIRMADO'
+                );
+                console.log(
+                    'Nenhum produto será entregue.'
+                );
+                console.log('');
+
+                return res.sendStatus(200);
+            }
+
+            console.log('');
+            console.log(
+                '======================================'
+            );
+            console.log(
+                '✅ PAGAMENTO REAL CONFIRMADO'
+            );
+            console.log(
+                '======================================'
+            );
+            console.log(
+                `Order ID: ${order.id}`
+            );
+            console.log(
+                `Referência: ${resultado.externalReference}`
+            );
+            console.log(
+                `Valor: R$ ${resultado.totalPago.toFixed(2)}`
+            );
+            console.log(
+                '======================================'
+            );
+            console.log('');
+
+            // IMPORTANTE:
+            //
+            // Ainda NÃO fazemos a entrega aqui.
+            //
+            // Neste ponto já temos:
+            //
+            // 1. Webhook autenticado
+            // 2. Order consultada diretamente no Mercado Pago
+            // 3. Order processada
+            // 4. Status accredited
+            // 5. Pagamento processado/acreditado
+            // 6. Valor total conferido
+            // 7. External reference da Xablau conferida
+            //
+            // O próximo passo será conectar esta confirmação
+            // ao pedido correspondente do Discord.
+
+            return res.sendStatus(200);
+
+        } catch (erro) {
+
+            console.error(
+                '❌ Erro processando webhook:',
+                erro
+            );
+
+            return res.sendStatus(500);
         }
-
-        // ----------------------------------------------------
-        // WEBHOOK AUTÊNTICO
-        // ----------------------------------------------------
-
-        const tipo = req.body?.type;
-        const acao = req.body?.action;
-
-        const orderId =
-            req.query['data.id'] ||
-            req.body?.data?.id ||
-            null;
-
-        console.log('');
-        console.log('======================================');
-        console.log('🔔 WEBHOOK MERCADO PAGO AUTÊNTICO');
-        console.log('======================================');
-        console.log(`Tipo: ${tipo || 'não informado'}`);
-        console.log(`Ação: ${acao || 'não informada'}`);
-        console.log(`Order ID: ${orderId || 'não informado'}`);
-        console.log('======================================');
-        console.log('');
-
-        // IMPORTANTE:
-        // Ainda NÃO liberamos produto aqui.
-        //
-        // No próximo passo consultaremos a Order diretamente
-        // na API do Mercado Pago e confirmaremos:
-        //
-        // - status real da Order
-        // - status do pagamento
-        // - valor pago
-        // - external_reference
-        //
-        // Só depois disso o pedido poderá ser entregue.
-
-        return res.sendStatus(200);
-
-    } catch (erro) {
-        console.error(
-            '❌ Erro processando webhook:',
-            erro
-        );
-
-        return res.sendStatus(500);
     }
-});
+);
 
 // ============================================================
 // ROTA NÃO ENCONTRADA
@@ -218,24 +607,45 @@ app.use((req, res) => {
 // INICIAR SERVIDOR
 // ============================================================
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(
+    PORT,
+    '0.0.0.0',
+    () => {
 
-    console.log('');
-    console.log('======================================');
-    console.log('       XABLAU STORE WEBHOOK');
-    console.log('======================================');
-    console.log(`Servidor iniciado na porta ${PORT}`);
+        console.log('');
+        console.log(
+            '======================================'
+        );
+        console.log(
+            '       XABLAU STORE WEBHOOK'
+        );
+        console.log(
+            '======================================'
+        );
 
-    if (WEBHOOK_SECRET) {
-        console.log('🔐 Assinatura Webhook: CONFIGURADA');
-    } else {
-        console.log('❌ Assinatura Webhook: NÃO CONFIGURADA');
+        console.log(
+            `Servidor iniciado na porta ${PORT}`
+        );
+
+        console.log(
+            WEBHOOK_SECRET
+                ? '🔐 Assinatura Webhook: CONFIGURADA'
+                : '❌ Assinatura Webhook: NÃO CONFIGURADA'
+        );
+
+        console.log(
+            ACCESS_TOKEN
+                ? '🔑 Mercado Pago API: CONFIGURADA'
+                : '❌ Mercado Pago API: NÃO CONFIGURADA'
+        );
+
+        console.log(
+            'Aguardando notificações do Mercado Pago...'
+        );
+
+        console.log(
+            '======================================'
+        );
+        console.log('');
     }
-
-    console.log(
-        'Aguardando notificações do Mercado Pago...'
-    );
-
-    console.log('======================================');
-    console.log('');
-});
+);
