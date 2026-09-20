@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Xablau Store</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0b0d12;
+            color: #ffffff;
+        }
+
+        header {
+            background: #11151d;
+            border-bottom: 1px solid #242a36;
+            padding: 25px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 32px;
+        }
+
+        header p {
+            color: #aeb6c5;
+            margin-top: 8px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 50px 20px;
+        }
+
+        .titulo {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .titulo h2 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .titulo p {
+            color: #aeb6c5;
+        }
+
+        .produtos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #151922;
+            border: 1px solid #282e3a;
+            border-radius: 14px;
+            padding: 30px;
+        }
+
+        .card h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        .preco {
+            font-size: 30px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .card p {
+            color: #b9c0cc;
+            line-height: 1.6;
+        }
+
+        .info {
+            margin-top: 45px;
+            background: #151922;
+            border: 1px solid #282e3a;
+            border-radius: 14px;
+            padding: 30px;
+        }
+
+        .info h2 {
+            margin-bottom: 15px;
+        }
+
+        .info p {
+            color: #b9c0cc;
+            line-height: 1.7;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            margin-top: 50px;
+            padding: 30px 20px;
+            text-align: center;
+            color: #858d9c;
+            border-top: 1px solid #242a36;
+        }
+
+        .destaque {
+            color: #ffffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>🛒 Xablau Store</h1>
+    <p>Produtos digitais e serviços para o seu PC</p>
+</header>
+
+<main class="container">
+
+    <div class="titulo">
+        <h2>Nossos produtos e serviços</h2>
+        <p>Confira as opções disponíveis na Xablau Store.</p>
+    </div>
+
+    <section class="produtos">
+
+        <div class="card">
+            <h3>🪟 Windows Lifetime</h3>
+
+            <div class="preco">
+                R$ 30,00
+            </div>
+
+            <p>
+                Produto digital com entrega após a confirmação do pagamento.
+            </p>
+        </div>
+
+        <div class="card">
+            <h3>⚡ Otimização de PC</h3>
+
+            <div class="preco">
+                R$ 20,00
+            </div>
+
+            <p>
+                Serviço de otimização realizado com atendimento e suporte
+                através do nosso servidor no Discord.
+            </p>
+        </div>
+
+    </section>
+
+    <section class="info">
+        <h2>💳 Pagamentos</h2>
+
+        <p>
+            Os pagamentos da Xablau Store são processados através do
+            <span class="destaque">Mercado Pago</span>.
+        </p>
+
+        <p>
+            A liberação do produto ou serviço ocorre após a confirmação
+            do pagamento.
+        </p>
+    </section>
+
+    <section class="info">
+        <h2>🎫 Atendimento e suporte</h2>
+
+        <p>
+            Compras, atendimento e suporte são realizados através do
+            servidor oficial da <span class="destaque">Xablau Store</span>
+            no Discord.
+        </p>
+    </section>
+
+    <section class="info">
+        <h2>📜 Termos de serviço</h2>
+
+        <p>
+            Os resultados do serviço de otimização podem variar conforme
+            o hardware, sistema operacional e configurações de cada computador.
+        </p>
+
+        <p>
+            O objetivo do serviço é realizar ajustes de otimização,
+            sem garantia de números específicos de FPS ou redução exata
+            de latência.
+        </p>
+
+        <p>
+            Após a realização do serviço, solicitações de reembolso
+            estarão sujeitas aos termos da contratação e à legislação aplicável.
+        </p>
+
+        <p>
+            O cliente possui até 3 dias após a conclusão do serviço
+            para solicitar suporte relacionado à otimização realizada.
+        </p>
+    </section>
+
+</main>
+
+<footer>
+    © 2026 Xablau Store • Todos os direitos reservados
+</footer>
+
+</body>
+</html>
